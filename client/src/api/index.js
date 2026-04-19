@@ -1,26 +1,22 @@
-import axios from 'axios';
+// Thin wrapper for Vercel serverless function calls (AI + review submission).
+// All Supabase CRUD is done directly via the supabase client in each page.
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
+const call = async (path, body) => {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+};
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('rb_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+export const generateReviews = (businessName, rating) =>
+  call('/api/ai', { businessName, rating });
 
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    const url = err.config?.url || '';
-    const isAuthRoute = url.includes('/auth/login') || url.includes('/auth/signup');
-    if (err.response?.status === 401 && !isAuthRoute) {
-      const hadToken = !!localStorage.getItem('rb_token');
-      localStorage.removeItem('rb_token');
-      // Only force-redirect if session expired; skip if user deliberately logged out (token already gone)
-      if (hadToken) window.location.href = '/login';
-    }
-    return Promise.reject(err);
-  }
-);
+export const submitReview = (campaignId, rating, generatedReview) =>
+  call('/api/review', { campaignId, rating, generatedReview });
 
-export default api;
+export const getPublicCampaign = (campaignId) =>
+  call('/api/campaign-public', { campaignId });

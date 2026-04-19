@@ -1,27 +1,23 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import api from '../api';
+import { supabase } from '../lib/supabase';
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    try {
-      const { data } = await api.post('/auth/login', form);
-      login(data.token, data.user);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
-    } finally {
+    const { error: err } = await supabase.auth.signInWithPassword(form);
+    if (err) {
+      setError(err.message);
       setLoading(false);
+    } else {
+      navigate('/dashboard');
     }
   };
 
@@ -33,7 +29,7 @@ export default function Login() {
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
           </svg>
         </div>
-        <span className="font-semibold text-gray-900">ReviewBoost</span>
+        <span className="font-semibold text-gray-900">ReviewPlus</span>
       </Link>
 
       <div className="card w-full max-w-sm p-8">
@@ -76,9 +72,7 @@ export default function Login() {
 
         <p className="mt-5 text-center text-sm text-gray-500">
           Don't have an account?{' '}
-          <Link to="/signup" className="text-brand-600 hover:text-brand-700 font-medium">
-            Sign up
-          </Link>
+          <Link to="/signup" className="text-brand-600 hover:text-brand-700 font-medium">Sign up</Link>
         </p>
       </div>
     </div>
